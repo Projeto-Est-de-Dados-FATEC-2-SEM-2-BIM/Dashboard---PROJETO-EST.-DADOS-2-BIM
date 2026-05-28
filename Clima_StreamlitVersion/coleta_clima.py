@@ -25,21 +25,11 @@ import pandas as pd
 import requests
 
 
-# ==========================================================
-# 1. CONFIGURAÇÕES GERAIS
-# ==========================================================
-
 API_URL = "https://archive-api.open-meteo.com/v1/archive"
 TIMEZONE = "America/Sao_Paulo"
 
-# Para análise de tendência, 5 anos é pouco. 15 anos completos dá uma leitura melhor
-# sem deixar a coleta pesada demais para um trabalho acadêmico.
 ANOS_HISTORICO = 15
 USAR_ANOS_COMPLETOS = True
-
-# Modelo de reanálise. ERA5 é indicado para séries históricas consistentes.
-# Caso a API retorne erro por indisponibilidade temporária, troque para "best_match".
-MODELO_REANALISE = "era5"
 
 PASTA_DADOS = Path("dados")
 ARQUIVO_DIARIO = PASTA_DADOS / "historico_clima_completo.csv"
@@ -53,9 +43,8 @@ MESES_PT = {
     7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez"
 }
 
-# Variáveis diárias usadas no projeto.
-# Elas permitem analisar temperatura média, máximas, mínimas, extremos, chuva e sazonalidade.
-DAILY_VARIABLES = [
+
+VARIAVEIS_DIARIAS = [
     "weather_code",
     "temperature_2m_mean",
     "temperature_2m_max",
@@ -71,7 +60,7 @@ DAILY_VARIABLES = [
     "cloud_cover_mean",
 ]
 
-RENOMEAR_COLUNAS = {
+RNM_COLUM = {
     "time": "Data",
     "weather_code": "Codigo_Clima",
     "temperature_2m_mean": "Temp_Media",
@@ -88,11 +77,6 @@ RENOMEAR_COLUNAS = {
     "cloud_cover_mean": "Nuvens_Media",
 }
 
-
-# ==========================================================
-# 2. MAPA DAS CAPITAIS
-#    Mantém a essência do código original do grupo.
-# ==========================================================
 
 mapa_brasil: Dict[str, Dict[str, str]] = {
     "Norte": {
@@ -127,9 +111,6 @@ coords: Dict[str, Tuple[float, float]] = {
 }
 
 
-# ==========================================================
-# 3. FUNÇÕES DE APOIO
-# ==========================================================
 
 def calcular_periodo(
     anos: int = ANOS_HISTORICO,
@@ -179,15 +160,12 @@ def montar_parametros(latitude: float, longitude: float, inicio: date, fim: date
         "longitude": longitude,
         "start_date": inicio.isoformat(),
         "end_date": fim.isoformat(),
-        "daily": ",".join(DAILY_VARIABLES),
+        "daily": ",".join(VARIAVEIS_DIARIAS),
         "timezone": TIMEZONE,
         "temperature_unit": "celsius",
         "wind_speed_unit": "kmh",
         "precipitation_unit": "mm",
     }
-
-    if MODELO_REANALISE and MODELO_REANALISE != "best_match":
-        parametros["models"] = MODELO_REANALISE
 
     return parametros
 
@@ -220,10 +198,10 @@ def coletar_cidade(cidade_info: dict, inicio: date, fim: date) -> pd.DataFrame:
 
     dados = requisitar_api(parametros)
     df = pd.DataFrame(dados["daily"])
-    df = df.rename(columns=RENOMEAR_COLUNAS)
+    df = df.rename(columns=RNM_COLUM)
 
     # Garante que as colunas esperadas existam mesmo se a API deixar de retornar alguma variável.
-    for coluna_api, coluna_final in RENOMEAR_COLUNAS.items():
+    for coluna_api, coluna_final in RNM_COLUM.items():
         if coluna_final not in df.columns:
             df[coluna_final] = pd.NA
 
@@ -410,7 +388,7 @@ def coletar_todas_capitais() -> pd.DataFrame:
     print("=" * 70)
     print(f"Período: {inicio} até {fim}")
     print(f"Capitais: {len(capitais)}")
-    print(f"Variáveis: {', '.join(DAILY_VARIABLES)}")
+    print(f"Variáveis: {', '.join(VARIAVEIS_DIARIAS)}")
     print("=" * 70)
 
     for indice, cidade_info in enumerate(capitais, start=1):
