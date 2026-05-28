@@ -4,8 +4,6 @@
 
 Análise histórica do clima nas capitais brasileiras, com foco em temperatura média, extremos climáticos, cidades mais quentes, sazonalidade e identificação do ano mais quente no período analisado.
 
-A escolha do tema se justifica pela relevância social das discussões sobre clima, ondas de calor, períodos extremos e impactos urbanos. O dashboard busca transformar dados meteorológicos em informações claras para estudantes, população em geral e possíveis tomadores de decisão.
-
 ## Fonte dos dados
 
 Os dados são coletados pela API pública Open-Meteo Historical Weather API.
@@ -23,62 +21,33 @@ A API retorna dados históricos por latitude e longitude, incluindo variáveis d
 5. Existem padrões sazonais bem definidos?
 6. Qual foi o ano mais quente registrado no período analisado?
 
-## Estrutura do projeto
-
-```text
-.
-├── coleta_clima.py
-├── dashboard_clima.py
-├── requirements.txt
-└── dados/
-    ├── historico_clima_completo.csv
-    ├── resumo_anual_cidades.csv
-    ├── resumo_mensal_cidades.csv
-    ├── resumo_brasil_anual.csv
-    └── tendencia_cidades.csv
-```
 
 ## Como rodar localmente
 
 ### 1. Criar ambiente virtual
 
-```bash
 python -m venv .venv
-```
 
 ### 2. Ativar ambiente virtual
 
-No Windows:
-
-```bash
 .venv\Scripts\activate
-```
 
-No Linux/Mac:
-
-```bash
-source .venv/bin/activate
-```
 
 ### 3. Instalar dependências
 
-```bash
 pip install -r requirements.txt
-```
+
 
 ### 4. Coletar e salvar os dados
 
-```bash
 python coleta_clima.py
-```
 
-Esse comando cria a pasta `dados/` e salva os arquivos CSV usados pelo dashboard.
+
+Esse comando cria a pasta dados e salva os arquivos CSV usados pelo dashboard.
 
 ### 5. Rodar o dashboard
 
-```bash
 streamlit run dashboard_clima.py
-```
 
 ## Tratamento dos dados
 
@@ -100,17 +69,12 @@ O projeto realiza as seguintes etapas de tratamento:
 
 ## Capturas de tela
 
-Adicionar aqui as capturas do dashboard final depois de rodar o projeto.
+tela_inicial.png
+tendencia_anual.png
+cidades_mais_quentes.png
+meses_extremos.png
+sazonalidade.png
 
-Sugestão:
-
-```text
-/imagens/tela_inicial.png
-/imagens/tendencia_anual.png
-/imagens/cidades_mais_quentes.png
-/imagens/meses_extremos.png
-/imagens/sazonalidade.png
-```
 
 ## Contexto das telas
 
