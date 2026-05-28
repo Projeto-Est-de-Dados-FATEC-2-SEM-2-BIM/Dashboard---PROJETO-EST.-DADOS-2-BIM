@@ -35,7 +35,7 @@ python -m venv .venv
 
 ### 3. Instalar dependências
 
-pip install -r requirements.txt
+python -m venv .venv
 
 
 ### 4. Coletar e salvar os dados
@@ -47,7 +47,7 @@ Esse comando cria a pasta dados e salva os arquivos CSV usados pelo dashboard.
 
 ### 5. Rodar o dashboard
 
-streamlit run StreamLIT/dashboard_clima.py
+streamlit run ./StreamLIT/dashboard_clima.py
 
 ## Tratamento dos dados
 

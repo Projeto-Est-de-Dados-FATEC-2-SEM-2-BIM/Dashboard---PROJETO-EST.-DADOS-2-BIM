@@ -1,17 +1,3 @@
-"""
-coleta_clima.py
-
-Arquivo responsável por:
-1. Coletar dados históricos de clima das capitais brasileiras na API Open-Meteo.
-2. Salvar os dados localmente em CSV.
-3. Gerar bases processadas/resumidas para uso no dashboard Streamlit.
-
-Como rodar:
-    python coleta_clima.py
-
-Depois rode o dashboard:
-    streamlit run dashboard_clima.py
-"""
 
 from __future__ import annotations
 
@@ -171,20 +157,103 @@ def montar_parametros(latitude: float, longitude: float, inicio: date, fim: date
 
 
 def requisitar_api(parametros: dict) -> dict:
-    """Executa a requisição HTTP e devolve o JSON."""
-    resposta = requests.get(API_URL, params=parametros, timeout=60)
+    """Executa a requisição HTTP com tentativas automáticas.
 
-    if resposta.status_code != 200:
-        raise RuntimeError(
-            f"Erro HTTP {resposta.status_code}: {resposta.text[:500]}"
-        )
+    Esta função trata instabilidades comuns em APIs públicas:
+    - HTTP 429: limite de requisições atingido;
+    - ReadTimeout/ConnectTimeout: demora na resposta ou conexão;
+    - HTTP 500/502/503/504: instabilidade temporária do servidor.
 
-    dados = resposta.json()
+    A coleta só falha de verdade depois que todas as tentativas acabam.
+    """
+    max_tentativas = 12
+    espera_inicial = 5
+    espera_maxima = 180
 
-    if "daily" not in dados:
-        raise RuntimeError(f"Resposta sem chave 'daily': {dados}")
+    for tentativa in range(1, max_tentativas + 1):
+        try:
+            resposta = requests.get(
+                API_URL,
+                params=parametros,
+                # timeout=(tempo para conectar, tempo para ler a resposta)
+                timeout=(15, 180),
+            )
 
-    return dados
+            if resposta.status_code == 200:
+                dados = resposta.json()
+
+                if "daily" not in dados:
+                    raise RuntimeError(f"Resposta sem chave 'daily': {dados}")
+
+                return dados
+
+            if resposta.status_code == 429:
+                retry_after = resposta.headers.get("Retry-After")
+
+                if retry_after is not None and retry_after.isdigit():
+                    tempo_espera = int(retry_after)
+                else:
+                    tempo_espera = min(espera_inicial * tentativa, espera_maxima)
+
+                print(
+                    f"    HTTP 429: limite da API atingido. "
+                    f"Aguardando {tempo_espera}s antes de tentar novamente "
+                    f"({tentativa}/{max_tentativas})..."
+                )
+                sleep(tempo_espera)
+                continue
+
+            if resposta.status_code in [500, 502, 503, 504]:
+                tempo_espera = min(espera_inicial * tentativa, espera_maxima)
+
+                print(
+                    f"    HTTP {resposta.status_code}: instabilidade temporária da API. "
+                    f"Aguardando {tempo_espera}s antes de tentar novamente "
+                    f"({tentativa}/{max_tentativas})..."
+                )
+                sleep(tempo_espera)
+                continue
+
+            raise RuntimeError(
+                f"Erro HTTP {resposta.status_code}: {resposta.text[:500]}"
+            )
+
+        except requests.exceptions.ReadTimeout:
+            tempo_espera = min(espera_inicial * tentativa, espera_maxima)
+
+            print(
+                f"    Timeout de leitura: a API demorou para responder. "
+                f"Aguardando {tempo_espera}s antes de tentar novamente "
+                f"({tentativa}/{max_tentativas})..."
+            )
+            sleep(tempo_espera)
+            continue
+
+        except requests.exceptions.ConnectTimeout:
+            tempo_espera = min(espera_inicial * tentativa, espera_maxima)
+
+            print(
+                f"    Timeout de conexão. "
+                f"Aguardando {tempo_espera}s antes de tentar novamente "
+                f"({tentativa}/{max_tentativas})..."
+            )
+            sleep(tempo_espera)
+            continue
+
+        except requests.exceptions.ConnectionError as erro:
+            tempo_espera = min(espera_inicial * tentativa, espera_maxima)
+
+            print(
+                f"    Erro de conexão: {erro}. "
+                f"Aguardando {tempo_espera}s antes de tentar novamente "
+                f"({tentativa}/{max_tentativas})..."
+            )
+            sleep(tempo_espera)
+            continue
+
+    raise RuntimeError(
+        f"API não respondeu corretamente após {max_tentativas} tentativas."
+    )
 
 
 def coletar_cidade(cidade_info: dict, inicio: date, fim: date) -> pd.DataFrame:
@@ -407,8 +476,8 @@ def coletar_todas_capitais() -> pd.DataFrame:
             erros.append(mensagem)
             print(f"    FALHA: {mensagem}")
 
-        # Pequena pausa para evitar muitas chamadas instantâneas.
-        sleep(0.2)
+        # Pausa entre cidades para reduzir chance de HTTP 429.
+        sleep(1.5)
 
     if not bases:
         raise RuntimeError("Nenhuma cidade foi coletada com sucesso.")
