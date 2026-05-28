@@ -40,14 +40,14 @@ pip install -r requirements.txt
 
 ### 4. Coletar e salvar os dados
 
-python coleta_clima.py
+StreamLIT/python coleta_clima.py
 
 
 Esse comando cria a pasta dados e salva os arquivos CSV usados pelo dashboard.
 
 ### 5. Rodar o dashboard
 
-streamlit run dashboard_clima.py
+streamlit run StreamLIT/dashboard_clima.py
 
 ## Tratamento dos dados
 
